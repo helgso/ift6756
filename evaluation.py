@@ -19,7 +19,9 @@ def main():
         'n_filters': 128,
         'learning_rate': 1e-5,
         'weight_decay': 1e-3,
-        'value_head_dense_layer_size': 128
+        'value_head_dense_layer_size': 128,
+        'head_inputs_fixed': True,
+        'n_middle_blocks': 0
     }
     self_play_config = {
         'n_games': 30,
@@ -44,12 +46,10 @@ def main():
     
     random_agent = RandomAgent()
     network = Network(config=network_config)
-    # network.load_weights('checkpoints/TargetMode.Q_VALUES/0c31bd6771ca469cba4e3ce4eec6fcba/12.h5') # from the poster graph
-    network.load_weights('checkpoints/TargetMode.Z_VALUES/4f468474f5c44c8f8107568ba64f047d/10.h5') # from the poster graph
+    # Choose a model saved by training.py
+    network.load_weights('checkpoints/TargetMode.Z_VALUES/4f468474f5c44c8f8107568ba64f047d/10.h5')
 
-    elo_ratings = compete(network, random_agent, game, self_play_config)
-    print("Elo ratings:")
-    print(elo_ratings)
+    compete(network, random_agent, game, self_play_config)
 
 def compete(network: Network, random_agent: RandomAgent, game: GoGame, config: dict):
     def alpha_zero_plays():
@@ -80,17 +80,23 @@ def compete(network: Network, random_agent: RandomAgent, game: GoGame, config: d
         game.reset()
         black_player = np.random.choice(len(players))
         white_player = 1 - black_player
-        for j in range(config['max_moves']):
+        while True:
             players[black_player]['play_function']()
+            if game.is_done() or len(game.history) >= config['max_moves']:
+                break
             players[white_player]['play_function']()
-        game.end_game()
+            if game.is_done() or len(game.history) >= config['max_moves']:
+                break
+        if not game.is_done():
+            game.end_game()
         reward = game.get_reward()
         winner = get_winner(players, black_player, reward)
         if winner is None:
             elo_manager.recordMatch(players[0]['name'], players[1]['name'], draw=True)
         else:
             elo_manager.recordMatch(players[0]['name'], players[1]['name'], winner=winner)
-    return elo_manager.getRatingList()
+        print(f'\tGame result: {winner + " won" if winner else "Tie"}')
+        print(f'\tCurrent ELO ratings: {elo_manager.getRatingList()}')
 
 if __name__ == '__main__':
     main()

@@ -40,7 +40,7 @@ class MCTS():
 
         for _ in range(config['n_simulations']):            
             node = root
-            scratch_game = copy.deepcopy(game)
+            scratch_game = game.clone()
             search_path = [node]
 
             while node.expanded():
@@ -59,7 +59,7 @@ class MCTS():
     @staticmethod
     def select_action(config: dict, game: GoGame, root: Node):
         action_stats = np.array([[child.visit_count, action, child.value()] for action, child in root.children.items()])
-        if len(game.get_history()) < 2*config['n_sampling_moves']:
+        if len(game.get_history()) < config['n_sampling_moves']:
             return MCTS.softmax_sample(action_stats, config['temperature'])
         
         return MCTS.max(action_stats)

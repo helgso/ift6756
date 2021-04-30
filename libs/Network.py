@@ -28,8 +28,16 @@ class Network():
         x = layers.BatchNormalization(axis=1)(x)
         conv_outputs = layers.Activation('relu')(x)
 
+        for i in range(config['n_middle_blocks']):
+            conv_outputs = layers.Conv2D(filters=nf, kernel_size=ks, padding='same', input_shape=input_shape,
+                                         kernel_regularizer=l2(config['weight_decay']))(conv_outputs)
+            conv_outputs = layers.BatchNormalization(axis=1)(conv_outputs)
+            conv_outputs = layers.Activation('relu')(conv_outputs)
+
+        head_inputs = input_shape if config.get('head_inputs_fixed', False) else input_shape[1:]
+
         # Policy head
-        x = layers.Conv2D(filters=nf, kernel_size=ks, input_shape=input_shape[1:],
+        x = layers.Conv2D(filters=nf, kernel_size=ks, input_shape=head_inputs,
                           kernel_regularizer=l2(config['weight_decay']))(conv_outputs)
         x = layers.BatchNormalization(axis=1)(x)
         x = layers.Activation('relu')(x)
@@ -38,7 +46,7 @@ class Network():
         policy_outputs = layers.Activation('softmax')(x)
 
         # Value head
-        x = layers.Conv2D(filters=1, kernel_size=1, input_shape=input_shape[1:],
+        x = layers.Conv2D(filters=1, kernel_size=1, input_shape=head_inputs,
                           kernel_regularizer=l2(config['weight_decay']))(conv_outputs)
         x = layers.BatchNormalization(axis=1)(x)
         x = layers.Activation('relu')(x)

@@ -1,3 +1,5 @@
+import copy
+
 import gym
 import numpy as np
 import tensorflow as tf
@@ -15,6 +17,15 @@ class GoGame():
         self.reward = None
         self.done = False
         self.info = None
+
+    def clone(self):
+        cloned_game = GoGame(self.board_size)
+        cloned_game.history = copy.deepcopy(self.history)
+        cloned_game.state = copy.deepcopy(self.state)
+        cloned_game.reward = copy.deepcopy(self.reward)
+        cloned_game.done = copy.deepcopy(self.done)
+        cloned_game.info = copy.deepcopy(self.info)
+        return cloned_game
 
     def is_done(self):
         return self.done

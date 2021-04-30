@@ -12,7 +12,7 @@ from libs.MCTS import MCTS
 from libs.shared import TargetMode
 
 def main():    
-    target_mode = TargetMode.Q_VALUES
+    target_mode = TargetMode.Z_VALUES
 
     model_id = uuid.uuid4().hex
     model_folder = f'checkpoints/{target_mode}/{model_id}'
@@ -20,7 +20,6 @@ def main():
     if not os.path.exists(model_folder):
         os.makedirs(model_folder)
 
-    target_mode = TargetMode.Q_VALUES
     game_config = {
         'board_size': 9
     }
@@ -30,11 +29,13 @@ def main():
         'n_filters': 128,
         'learning_rate': 1e-5,
         'weight_decay': 1e-3,
-        'value_head_dense_layer_size': 128
+        'value_head_dense_layer_size': 128,
+        'head_inputs_fixed': True,
+        'n_middle_blocks': 0
     }
     train_config = {
         'n_training_loops': 1000,
-        'checkpoint_interval': 2,
+        'checkpoint_interval': 1,
         'epochs': 1,
         'batch_size': 8
     }
@@ -81,9 +82,8 @@ def play_game(network: Network, game: GoGame, config: dict):
     board_states = []
     target_policies = []
     q_values = []
-    n_ply = 2*config['max_moves']
-    with tqdm(total=n_ply, desc='Playing game with MCTS') as progress_bar:
-        while not game.is_done() and len(game.history) < n_ply:
+    with tqdm(total=config['max_moves'], desc='Playing game with MCTS') as progress_bar:
+        while not game.is_done() and len(game.history) < config['max_moves']:
             board_state = game.get_board_state()
             action, q_value, target_policy = MCTS.run(network, game, config)
             game.step(action)
